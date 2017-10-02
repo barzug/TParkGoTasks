@@ -54,6 +54,26 @@ func lastFileIndexSearch(filesInDirInfo []os.FileInfo, printFiles bool) int {
 	return -1
 }
 
+func printFile(out *bytes.Buffer, indention string, fileInfo os.FileInfo, isLast bool) {
+	size := getSizeString(fileInfo)
+
+	if isLast {
+		fmt.Fprintf(out, indention+lastFilePrintFormat, fileInfo.Name(), size)
+		return
+	}
+
+	fmt.Fprintf(out, indention+filePrintFormat, fileInfo.Name(), size)
+}
+
+func printDir(out *bytes.Buffer, indention string, fileInfo os.FileInfo, isLast bool) {
+	if isLast {
+		fmt.Fprintf(out, indention+lastDirPrintFormat, fileInfo.Name())
+		return
+	}
+
+	fmt.Fprintf(out, indention+dirPrintFormat, fileInfo.Name())
+}
+
 func visitDirRec(out *bytes.Buffer, path string, printFiles bool, indention string) (err error) {
 	filesInDirInfo, err := readDir(path)
 	if err != nil {
@@ -67,41 +87,26 @@ func visitDirRec(out *bytes.Buffer, path string, printFiles bool, indention stri
 
 	for i, fileInfo := range filesInDirInfo {
 		if fileInfo.IsDir() {
+			printDir(out, indention, fileInfo, i == lastFileIndex)
+
 			if i == lastFileIndex {
-				fmt.Fprintf(out, indention+lastDirPrintFormat, fileInfo.Name())
-				err = visitDirRec(out, path+"/"+fileInfo.Name(), printFiles, indention+defaultIndention)
-				if err != nil {
-					return err
-				}
-				return
+				return visitDirRec(out, path+"/"+fileInfo.Name(), printFiles, indention+defaultIndention)
 			}
 
-			fmt.Fprintf(out, indention+dirPrintFormat, fileInfo.Name())
 			err = visitDirRec(out, path+"/"+fileInfo.Name(), printFiles, indention+"│"+defaultIndention)
 			if err != nil {
-				return err
+				return
 			}
 
 		} else if printFiles {
-			size := getSizeString(fileInfo)
-
-			if i == lastFileIndex {
-				fmt.Fprintf(out, indention+lastFilePrintFormat, fileInfo.Name(), size)
-				return
-			}
-
-			fmt.Fprintf(out, indention+filePrintFormat, fileInfo.Name(), size)
+			printFile(out, indention, fileInfo, i == lastFileIndex)
 		}
 	}
 	return
 }
 
 func dirTree(out *bytes.Buffer, path string, printFiles bool) (err error) {
-	err = visitDirRec(out, path, printFiles, "")
-	if err != nil {
-		return err
-	}
-	return
+	return visitDirRec(out, path, printFiles, "")
 }
 
 func main() {
