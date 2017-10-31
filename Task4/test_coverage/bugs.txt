@@ -1,0 +1,29 @@
+Во время тестов были найдены следующие баги:
+
+1. Было:
+if req.Offset < 0 {
+	return nil, fmt.Errorf("limit must be > 0")
+}
+
+Надо:
+if req.Offset < 0 {
+	return nil, fmt.Errorf("offset must be > 0")
+}
+
+
+2. Было: 
+result.Users = data[0 : len(data)]
+if len(data) > req.Limit {
+	result.NextPage = true
+}
+
+Надо:
+result.Users = data[0 : len(data)-1]
+if len(data) > req.Limit-1 {
+	result.NextPage = true
+}
+
+3. Было:
+	searcherParams.Add("ofset", strconv.Itoa(req.Offset))
+Надо:
+	searcherParams.Add("offset", strconv.Itoa(req.Offset))
